@@ -1,9 +1,8 @@
-package bot
+package main
 
 import (
-	"../conf"
-	"../users"
 	"fmt"
+	"github.com/IngvarListard/courses-telebot/internal/db/models"
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api"
 	"log"
 )
@@ -11,12 +10,12 @@ import (
 // Start ...
 func Start() {
 
-	bot, err := tgbotapi.NewBotAPI(conf.ApiKey)
+	bot, err := tgbotapi.NewBotAPI(ApiKey)
 	if err != nil {
 		log.Panic(err)
 	}
 
-	bot.Debug = conf.Debug
+	bot.Debug = Debug
 
 	log.Printf("Authorized on account %s", bot.Self.UserName)
 
@@ -35,7 +34,7 @@ func Start() {
 		msg.ReplyToMessageID = update.Message.MessageID
 
 		if update.Message.Text == "/start" {
-			user := conf.Db.FirstOrCreate(&users.User{TgId: update.Message.From.ID}, users.User{
+			user := Db.FirstOrCreate(&models.User{TgId: update.Message.From.ID}, models.User{
 				Name: update.Message.From.FirstName,
 				TgId: update.Message.From.ID,
 			})

@@ -1,20 +1,18 @@
 package main
 
 import (
-	"./bot"
-	"./conf"
-	"./users"
+	"github.com/IngvarListard/courses-telebot/internal/db/models"
 	_ "github.com/jinzhu/gorm/dialects/sqlite"
 )
 
 // migrateSchema синхронизация сземы БД
 func migrateSchema() {
-	conf.Db.AutoMigrate(&users.User{})
+	Db.AutoMigrate(&models.User{})
 }
 
 func main() {
-	conf.Setup()
-	defer conf.Db.Close()
+	Setup()
+	defer Db.Close()
 	migrateSchema()
-	bot.Start()
+	Start()
 }
