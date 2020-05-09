@@ -28,6 +28,7 @@ func Handle(u tgbotapi.Update) (err error) {
 	}
 	log.Printf("[%s] %s", u.Message.From.UserName, u.Message.Text)
 	text := u.Message.Text
+	// TODO: bot commands are specified as separate type MessageEntity
 	if f, ok := commands[text]; ok {
 		err = f(u)
 	}
@@ -36,9 +37,9 @@ func Handle(u tgbotapi.Update) (err error) {
 }
 
 func startHandler(u tgbotapi.Update) (err error) {
-	UID := uint(u.Message.From.ID)
-	DB.FirstOrCreate(&models.User{ID: UID}, models.User{
-		ID:           UID,
+	ID := u.Message.From.ID
+	DB.FirstOrCreate(&models.User{ID: ID}, models.User{
+		ID:           ID,
 		FirstName:    u.Message.From.FirstName,
 		LastName:     u.Message.From.LastName,
 		UserName:     u.Message.From.UserName,

@@ -10,7 +10,7 @@ import (
 
 // migrateSchema синхронизация сземы БД
 func migrateSchema() {
-	DB.AutoMigrate(&models.User{})
+	DB.AutoMigrate(&models.User{}, &models.Chat{}, &models.LearningNode{}, &models.Document{})
 }
 
 func Start() {
