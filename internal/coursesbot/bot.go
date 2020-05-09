@@ -2,14 +2,12 @@ package coursesbot
 
 import (
 	"fmt"
-	"github.com/IngvarListard/courses-telebot/internal/db/models"
+	"github.com/IngvarListard/courses-telebot/internal/db"
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api"
-	"github.com/jinzhu/gorm"
 	"log"
 )
 
 var (
-	DB       *gorm.DB
 	Bot      *tgbotapi.BotAPI
 	commands = map[string]func(tgbotapi.Update) error{
 		"/start": startHandler,
@@ -17,14 +15,45 @@ var (
 	}
 )
 
-func Setup(db *gorm.DB, bot *tgbotapi.BotAPI) {
-	DB = db
-	Bot = bot
+func Setup(APIKey string, Debug bool) (err error) {
+	if Bot, err = tgbotapi.NewBotAPI(APIKey); err != nil {
+		return err
+	}
+	Bot.Debug = Debug
+	log.Printf("Authorized on account %s", Bot.Self.UserName)
+	return err
+}
+
+func Start() (err error) {
+
+	u := tgbotapi.NewUpdate(0)
+	u.Timeout = 60
+
+	updates, err := Bot.GetUpdatesChan(u)
+	if err != nil {
+		return fmt.Errorf("error while getting updates: %v", err)
+	}
+
+	for update := range updates {
+		if update.Message == nil { // ignore any non-Message Updates
+			continue
+		}
+		if err := Handle(update); err != nil {
+			text := update.Message.Text
+			log.Printf("error during processing of the message: %v: %v", text, err)
+			text = "Во время обработки зарпоса произошла ошибка"
+			msg := tgbotapi.NewMessage(update.Message.Chat.ID, text)
+			if _, err := Bot.Send(msg); err != nil {
+				log.Printf("error sending message: %v: %v", text, err)
+			}
+		}
+	}
+	return err
 }
 
 func Handle(u tgbotapi.Update) (err error) {
-	if DB == nil || Bot == nil {
-		return fmt.Errorf("no DB instance in coursesbot handler")
+	if Bot == nil {
+		return fmt.Errorf("improperly configured")
 	}
 	log.Printf("[%s] %s", u.Message.From.UserName, u.Message.Text)
 	text := u.Message.Text
@@ -37,15 +66,7 @@ func Handle(u tgbotapi.Update) (err error) {
 }
 
 func startHandler(u tgbotapi.Update) (err error) {
-	ID := u.Message.From.ID
-	DB.FirstOrCreate(&models.User{ID: ID}, models.User{
-		ID:           ID,
-		FirstName:    u.Message.From.FirstName,
-		LastName:     u.Message.From.LastName,
-		UserName:     u.Message.From.UserName,
-		LanguageCode: u.Message.From.LanguageCode,
-		IsBot:        u.Message.From.IsBot,
-	})
+	db.AddConversation(u.Message.From, u.Message.Chat)
 
 	msg := tgbotapi.NewMessage(u.Message.Chat.ID, "START")
 	msg.ReplyToMessageID = u.Message.MessageID
