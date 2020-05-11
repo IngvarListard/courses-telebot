@@ -19,7 +19,6 @@ func Setup() (*gorm.DB, error) {
 		log.Printf("failed to connect database: %v", err)
 		return nil, err
 	}
-	MigrateSchema()
 	return DB, err
 }
 
