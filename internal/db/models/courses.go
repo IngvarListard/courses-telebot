@@ -24,6 +24,7 @@ type Document struct {
 	Name     string        `json:"name"`
 	FileName string        `json:"file_name"`
 	FileID   string        `json:"file_id"`
+	Path     string        `json:"path"`
 	Type     string        `json:"type"`
 	Priority float32       `json:"priority"`
 	NodeID   string        `json:"node_id"`
