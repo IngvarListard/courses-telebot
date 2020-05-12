@@ -4,6 +4,7 @@ import (
 	"github.com/IngvarListard/courses-telebot/internal/db/models"
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api"
 	"github.com/jinzhu/gorm"
+	_ "github.com/jinzhu/gorm/dialects/sqlite"
 	"log"
 )
 
@@ -28,23 +29,24 @@ func MigrateSchema() {
 }
 
 func AddConversation(user *tgbotapi.User, chat *tgbotapi.Chat) {
-	newChat := DB.FirstOrCreate(&models.Chat{ID: chat.ID}, models.Chat{
-		ID:    chat.ID,
-		Type:  chat.Type,
-		Title: chat.Title,
-	})
+	newChat := models.Chat{Type: chat.Type, Title: chat.Title}
+	DB.Where(models.Chat{ID: chat.ID}).Attrs(newChat).FirstOrCreate(&newChat)
 
-	chatVal := newChat.Value.(*models.Chat)
 	newUser := models.User{
-		ID:           user.ID,
 		FirstName:    user.FirstName,
 		LastName:     user.LastName,
 		UserName:     user.UserName,
 		LanguageCode: user.LanguageCode,
 		IsBot:        user.IsBot,
 	}
-	if chatVal != nil {
-		newUser.ChatID = chatVal.ID
+	if newChat.ID != 0 {
+		newUser.ChatID = newChat.ID
 	}
-	DB.FirstOrCreate(&models.User{ID: user.ID}, newUser)
+	DB.Where(models.User{ID: user.ID}).Attrs(newUser).FirstOrCreate(&newUser)
+}
+
+func GetCourses() []models.LearningNode {
+	var nodes []models.LearningNode
+	DB.Where("parent_id IS NULL").Find(&nodes)
+	return nodes
 }

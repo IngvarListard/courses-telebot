@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"github.com/IngvarListard/courses-telebot/internal/coursesbot"
 	"github.com/IngvarListard/courses-telebot/internal/db"
-	_ "github.com/jinzhu/gorm/dialects/sqlite"
 	"log"
 	"os"
 )

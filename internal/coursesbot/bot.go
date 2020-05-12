@@ -15,8 +15,9 @@ import (
 var (
 	Bot      *tgbotapi.BotAPI
 	commands = map[string]func(tgbotapi.Update) error{
-		"/start": startHandler,
-		"/hello": helloHandler,
+		"/start":   startHandler,
+		"/hello":   helloHandler,
+		"/courses": coursesHandler,
 	}
 )
 
@@ -99,5 +100,21 @@ func helloHandler(u tgbotapi.Update) (err error) {
 	if _, err := Bot.Send(msg); err != nil {
 		return fmt.Errorf("error sending message: %v", err)
 	}
+	return err
+}
+
+func coursesHandler(u tgbotapi.Update) (err error) {
+	courses := db.GetCourses()
+	var cc [][]tgbotapi.InlineKeyboardButton
+
+	for _, v := range courses {
+		newRow := tgbotapi.NewInlineKeyboardRow(tgbotapi.NewInlineKeyboardButtonData(v.Name, string(v.ID)))
+		cc = append(cc, newRow)
+	}
+	keyboard := tgbotapi.NewInlineKeyboardMarkup(cc...)
+
+	msg := tgbotapi.NewMessage(u.Message.Chat.ID, "КУРС")
+	msg.ReplyMarkup = keyboard
+	_, err = Bot.Send(msg)
 	return err
 }
