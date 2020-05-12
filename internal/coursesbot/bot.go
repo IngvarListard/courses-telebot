@@ -1,10 +1,15 @@
 package coursesbot
 
 import (
+	"context"
 	"fmt"
 	"github.com/IngvarListard/courses-telebot/internal/db"
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api"
+	"golang.org/x/net/proxy"
 	"log"
+	"net"
+	"net/http"
+	"os"
 )
 
 var (
@@ -16,9 +21,22 @@ var (
 )
 
 func Setup(APIKey string, Debug bool) (err error) {
-	if Bot, err = tgbotapi.NewBotAPI(APIKey); err != nil {
+	dialer, proxyErr := proxy.SOCKS5(
+		"tcp",
+		os.Getenv("SOCKS5_URL"),
+		&proxy.Auth{User: os.Getenv("SOCKS5_USER"), Password: os.Getenv("SOCKS5_PASSWORD")},
+		proxy.Direct,
+	)
+	if proxyErr != nil {
+		log.Panicf("Error in proxy %s", proxyErr)
+	}
+	client := &http.Client{Transport: &http.Transport{DialContext: func(ctx context.Context, network, addr string) (net.Conn, error) {
+		return dialer.Dial(network, addr)
+	}}}
+	if Bot, err = tgbotapi.NewBotAPIWithClient(APIKey, client); err != nil {
 		return err
 	}
+
 	Bot.Debug = Debug
 	log.Printf("Authorized on account %s", Bot.Self.UserName)
 	return err
