@@ -13,7 +13,7 @@ var (
 	Debug  bool
 )
 
-// parseEnv bot configuration
+// parseEnv get bot related environment variables
 func parseEnv() error {
 	APIKey = os.Getenv("API_KEY")
 	Debug = os.Getenv("DEBUG") == "1"
@@ -29,6 +29,7 @@ func main() {
 	}
 
 	_db, err := db.Setup()
+
 	if err != nil {
 		log.Fatalf("error while connecting to database: %v", err)
 	}
@@ -42,6 +43,7 @@ func main() {
 	if err := coursesbot.Setup(APIKey, Debug); err != nil {
 		log.Fatalf("error when setup the bot: %v", err)
 	}
+
 	if err := coursesbot.Start(); err != nil {
 		log.Fatalf("program runtime error: %v", err)
 	}

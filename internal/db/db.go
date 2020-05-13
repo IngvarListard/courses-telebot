@@ -28,9 +28,13 @@ func MigrateSchema() {
 	DB.AutoMigrate(&models.Chat{}, &models.User{}, &models.LearningNode{}, &models.Document{})
 }
 
+// AddConversation add user and related chat to db
 func AddConversation(user *tgbotapi.User, chat *tgbotapi.Chat) {
 	newChat := models.Chat{Type: chat.Type, Title: chat.Title}
-	DB.Where(models.Chat{ID: chat.ID}).Attrs(newChat).FirstOrCreate(&newChat)
+
+	if err := DB.Where(models.Chat{ID: chat.ID}).Attrs(newChat).FirstOrCreate(&newChat).Error; err != nil {
+		log.Printf("error creating chat in database: %v", err)
+	}
 
 	newUser := models.User{
 		FirstName:    user.FirstName,
@@ -42,11 +46,15 @@ func AddConversation(user *tgbotapi.User, chat *tgbotapi.Chat) {
 	if newChat.ID != 0 {
 		newUser.ChatID = newChat.ID
 	}
-	DB.Where(models.User{ID: user.ID}).Attrs(newUser).FirstOrCreate(&newUser)
+
+	if err := DB.Where(models.User{ID: user.ID}).Attrs(newUser).FirstOrCreate(&newUser).Error; err != nil {
+		log.Printf("error creating user in database: %v", err)
+	}
 }
 
-func GetCourses() []models.LearningNode {
-	var nodes []models.LearningNode
+// GetCourses returns list of all available courses
+func GetCourses() []*models.LearningNode {
+	var nodes []*models.LearningNode
 	DB.Where("parent_id IS NULL").Find(&nodes)
 	return nodes
 }

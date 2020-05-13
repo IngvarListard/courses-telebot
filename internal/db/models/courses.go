@@ -14,7 +14,7 @@ type LearningNode struct {
 	Name     string `json:"name"`
 	DirName  string `json:"dir_name"`
 	Path     string `json:"path"`
-	ParentID uint   `json:"parent_id"`
+	ParentID int    `json:"parent_id"`
 	Parent   *LearningNode
 }
 
@@ -27,7 +27,7 @@ type Document struct {
 	Path     string        `json:"path"`
 	Type     string        `json:"type"`
 	Priority float32       `json:"priority"`
-	NodeID   string        `json:"node_id"`
+	NodeID   int           `json:"node_id"`
 	Node     *LearningNode `json:"node"`
 	URL      string        `json:"url"`
 }
