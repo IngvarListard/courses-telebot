@@ -6,9 +6,12 @@ import (
 	"github.com/IngvarListard/courses-telebot/internal/db/models"
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api"
 	"strconv"
+	"strings"
 )
 
-func getNodeList(c *tgbotapi.CallbackQuery, nodeID string) (err error) {
+const argsSep = ","
+
+func sendNodeList(c *tgbotapi.CallbackQuery, nodeID string) (err error) {
 	nodeIDint, err := strconv.ParseInt(nodeID, 10, 64)
 	if err != nil {
 		return fmt.Errorf("incorrect node ID in callback: %v", err)
@@ -30,7 +33,7 @@ func getNodeList(c *tgbotapi.CallbackQuery, nodeID string) (err error) {
 	return
 }
 
-func getDocument(c *tgbotapi.CallbackQuery, documentID string) error {
+func sendDocument(c *tgbotapi.CallbackQuery, documentID string) error {
 	document := &models.Document{}
 	documentIDint, err := strconv.ParseInt(documentID, 10, 64)
 	if err != nil {
@@ -41,4 +44,19 @@ func getDocument(c *tgbotapi.CallbackQuery, documentID string) error {
 	_, err = Bot.Send(d)
 
 	return err
+}
+
+func sendPage(c *tgbotapi.CallbackQuery, argsStr string) error {
+	const (
+		nodeID = iota
+		page
+		pType
+	)
+	args := strings.Split(argsStr, argsSep)
+	if args[pType] == "node" {
+
+	} else if args[pType] == "document" {
+
+	}
+	return nil
 }

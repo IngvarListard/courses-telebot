@@ -20,13 +20,14 @@ const (
 var (
 	Bot      *tgbotapi.BotAPI
 	commands = map[string]func(*tgbotapi.Message) error{
-		"start":   startCommand,
-		"hello":   helloCommand,
-		"courses": coursesCommand,
+		"start":   start,
+		"hello":   hello,
+		"courses": courses,
 	}
 	cbHandlers = map[string]func(*tgbotapi.CallbackQuery, string) error{
-		"getNodeList": getNodeList,
-		"getDocument": getDocument,
+		"sendNodeList": sendNodeList,
+		"sendDocument": sendDocument,
+		"sendPage":     sendPage,
 	}
 )
 
