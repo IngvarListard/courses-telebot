@@ -2,7 +2,7 @@ package coursesbot
 
 import (
 	"fmt"
-	"github.com/IngvarListard/courses-telebot/internal/db/models"
+	"github.com/IngvarListard/courses-telebot/internal/models"
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api"
 )
 

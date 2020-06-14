@@ -1,12 +1,12 @@
 package main
 
 import (
-	"github.com/IngvarListard/courses-telebot/internal/db"
+	"github.com/IngvarListard/courses-telebot/internal/store"
 	"log"
 )
 
 func main() {
-	_db, err := db.Setup()
+	_db, err := store.NewDB()
 	if err != nil {
 		log.Fatalf("error while connecting to database: %v", err)
 	}
@@ -15,5 +15,5 @@ func main() {
 			log.Printf("error during closing the DB connection: %v", err)
 		}
 	}()
-	db.MigrateSchema()
+	store.MigrateSchema()
 }

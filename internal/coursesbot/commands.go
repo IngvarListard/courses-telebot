@@ -2,13 +2,13 @@ package coursesbot
 
 import (
 	"fmt"
-	"github.com/IngvarListard/courses-telebot/internal/db"
-	"github.com/IngvarListard/courses-telebot/internal/db/models"
+	"github.com/IngvarListard/courses-telebot/internal/models"
+	"github.com/IngvarListard/courses-telebot/internal/store"
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api"
+	"log"
 )
 
 func start(message *tgbotapi.Message) (err error) {
-	db.AddConversation(message.From, message.Chat)
 
 	msg := tgbotapi.NewMessage(message.Chat.ID, "START")
 	msg.ReplyToMessageID = message.MessageID
@@ -27,7 +27,7 @@ func hello(message *tgbotapi.Message) (err error) {
 }
 
 func courses(message *tgbotapi.Message) (err error) {
-	courses := db.GetCourses()
+	courses := store.GetCourses()
 	keyboard, _ := genCoursesKeyboard(courses, []*models.Document{})
 
 	msg := tgbotapi.NewMessage(message.Chat.ID, "Доступные курсы")

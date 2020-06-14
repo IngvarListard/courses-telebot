@@ -3,6 +3,8 @@ package coursesbot
 import (
 	"context"
 	"fmt"
+	"github.com/IngvarListard/courses-telebot/internal/store"
+	"github.com/IngvarListard/courses-telebot/internal/store/gormstore"
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api"
 	"golang.org/x/net/proxy"
 	"log"
@@ -18,7 +20,6 @@ const (
 )
 
 var (
-	Bot      *tgbotapi.BotAPI
 	commands = map[string]func(*tgbotapi.Message) error{
 		"start":   start,
 		"hello":   hello,
@@ -31,7 +32,14 @@ var (
 	}
 )
 
-func Setup(APIKey string, Debug bool) (err error) {
+type Bot struct {
+	tgAPI  *tgbotapi.BotAPI
+	store  *store.Store
+	config *Config
+}
+
+func New(config *Config, store *gormstore.Store) (*Bot, error) {
+	var err error
 	dialer, proxyErr := proxy.SOCKS5(
 		"tcp",
 		os.Getenv("SOCKS5_URL"),
@@ -44,35 +52,42 @@ func Setup(APIKey string, Debug bool) (err error) {
 	client := &http.Client{Transport: &http.Transport{DialContext: func(ctx context.Context, network, addr string) (net.Conn, error) {
 		return dialer.Dial(network, addr)
 	}}}
-	if Bot, err = tgbotapi.NewBotAPIWithClient(APIKey, client); err != nil {
-		return err
+
+	botApi, err := tgbotapi.NewBotAPIWithClient(config.APIKey, client)
+	if err != nil {
+		return nil, err
+	}
+	bot := Bot{
+		botApi,
+		store,
+		config,
 	}
 
-	Bot.Debug = Debug
-	log.Printf("Authorized on account %s", Bot.Self.UserName)
-	return err
+	bot.tgAPI.Debug = config.Debug
+	log.Printf("Authorized on account %s", bot.tgAPI.Self.UserName)
+	return &bot, err
 }
 
-func errorHandler(err error, chatID int64, uType, content string) {
+func (b *Bot) HandleError(err error, chatID int64, uType, content string) {
 	log.Printf("error during processing of the message: '%v'; update type: '%v'; content: '%v'", err, uType, content)
 
 	text := "Во время обработки запроса произошла ошибка"
 	msg := tgbotapi.NewMessage(chatID, text)
 
-	if _, err := Bot.Send(msg); err != nil {
+	if _, err := b.tgAPI.Send(msg); err != nil {
 		log.Printf("error sending message: %v: %v", text, err)
 	}
 }
 
-func Start() (err error) {
-	if Bot == nil {
+func (b *Bot) Start() (err error) {
+	if b.tgAPI == nil {
 		log.Fatalln("improperly configured: no bot instance")
 	}
 
 	u := tgbotapi.NewUpdate(0)
 	u.Timeout = 60
 
-	updates, err := Bot.GetUpdatesChan(u)
+	updates, err := b.tgAPI.GetUpdatesChan(u)
 	if err != nil {
 		return fmt.Errorf("error while getting updates: %v", err)
 	}
@@ -80,19 +95,19 @@ func Start() (err error) {
 	for update := range updates {
 		switch {
 		case update.Message != nil:
-			if err := HandleMessage(update.Message); err != nil {
-				errorHandler(err, update.Message.Chat.ID, "message", update.Message.Text)
+			if err := b.HandleMessage(update.Message); err != nil {
+				b.HandleError(err, update.Message.Chat.ID, "message", update.Message.Text)
 			}
 		case update.CallbackQuery != nil:
-			if err := HandleCallback(update.CallbackQuery); err != nil {
-				errorHandler(err, update.CallbackQuery.Message.Chat.ID, "callback", update.CallbackQuery.Data)
+			if err := b.HandleCallback(update.CallbackQuery); err != nil {
+				b.HandleError(err, update.CallbackQuery.Message.Chat.ID, "callback", update.CallbackQuery.Data)
 			}
 		}
 	}
 	return err
 }
 
-func HandleMessage(message *tgbotapi.Message) (err error) {
+func (b *Bot) HandleMessage(message *tgbotapi.Message) (err error) {
 	log.Printf("[%s] %s", message.From.UserName, message.Text)
 	command := message.Command()
 	if f, ok := commands[command]; ok {
@@ -102,9 +117,9 @@ func HandleMessage(message *tgbotapi.Message) (err error) {
 	return err
 }
 
-func HandleCallback(c *tgbotapi.CallbackQuery) (err error) {
+func (b *Bot) HandleCallback(c *tgbotapi.CallbackQuery) (err error) {
 	fmt.Printf("%v\n", c.Data)
-	if _, e := Bot.AnswerCallbackQuery(tgbotapi.CallbackConfig{CallbackQueryID: c.ID}); e != nil {
+	if _, e := b.tgAPI.AnswerCallbackQuery(tgbotapi.CallbackConfig{CallbackQueryID: c.ID}); e != nil {
 		log.Printf("error during sending callback answer: %v", e)
 	}
 

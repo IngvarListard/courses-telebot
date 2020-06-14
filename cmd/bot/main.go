@@ -1,50 +1,36 @@
 package main
 
 import (
-	"fmt"
 	"github.com/IngvarListard/courses-telebot/internal/coursesbot"
-	"github.com/IngvarListard/courses-telebot/internal/db"
+	"github.com/IngvarListard/courses-telebot/internal/store"
+	"github.com/IngvarListard/courses-telebot/internal/store/gormstore"
 	"log"
-	"os"
 )
-
-var (
-	APIKey string
-	Debug  bool
-)
-
-// parseEnv get bot related environment variables
-func parseEnv() error {
-	APIKey = os.Getenv("API_KEY")
-	Debug = os.Getenv("DEBUG") == "1"
-	if APIKey == "" {
-		return fmt.Errorf("API_KEY is missiong")
-	}
-	return nil
-}
 
 func main() {
-	if err := parseEnv(); err != nil {
-		log.Fatal(err)
+	config, err := coursesbot.NewConfig()
+	if err != nil {
+		log.Fatalln(err)
 	}
 
-	_db, err := db.Setup()
-
+	db, err := store.NewDB()
 	if err != nil {
 		log.Fatalf("error while connecting to database: %v", err)
 	}
-
 	defer func() {
-		if err := _db.Close(); err != nil {
+		if err := db.Close(); err != nil {
 			log.Printf("error during closing the DB connection: %v", err)
 		}
 	}()
 
-	if err := coursesbot.Setup(APIKey, Debug); err != nil {
+	gormStore := gormstore.New(db)
+
+	bot, err := coursesbot.New(config, gormStore)
+	if err != nil {
 		log.Fatalf("error when setup the bot: %v", err)
 	}
 
-	if err := coursesbot.Start(); err != nil {
+	if err := bot.Start(); err != nil {
 		log.Fatalf("program runtime error: %v", err)
 	}
 
