@@ -3,35 +3,42 @@ package coursesbot
 import (
 	"fmt"
 	"github.com/IngvarListard/courses-telebot/internal/models"
-	"github.com/IngvarListard/courses-telebot/internal/store"
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api"
-	"log"
 )
 
-func start(message *tgbotapi.Message) (err error) {
-
-	msg := tgbotapi.NewMessage(message.Chat.ID, "START")
-	msg.ReplyToMessageID = message.MessageID
-	if _, err := Bot.Send(msg); err != nil {
-		return fmt.Errorf("error sending message: %v", err)
+func start() commandHandler {
+	return func(b *Bot, message *tgbotapi.Message) (err error) {
+		msg := tgbotapi.NewMessage(message.Chat.ID, "START")
+		msg.ReplyToMessageID = message.MessageID
+		if _, err := b.TgAPI.Send(msg); err != nil {
+			return fmt.Errorf("error sending message: %v", err)
+		}
+		return err
 	}
-	return err
 }
 
-func hello(message *tgbotapi.Message) (err error) {
-	msg := tgbotapi.NewMessage(message.Chat.ID, "HELLO WORLD")
-	if _, err := Bot.Send(msg); err != nil {
-		return fmt.Errorf("error sending message: %v", err)
+func hello() commandHandler {
+	return func(b *Bot, message *tgbotapi.Message) (err error) {
+		msg := tgbotapi.NewMessage(message.Chat.ID, "HELLO WORLD")
+		if _, err := b.TgAPI.Send(msg); err != nil {
+			return fmt.Errorf("error sending message: %v", err)
+		}
+		return err
 	}
-	return err
 }
 
-func courses(message *tgbotapi.Message) (err error) {
-	courses := store.GetCourses()
-	keyboard, _ := genCoursesKeyboard(courses, []*models.Document{})
+func courses() commandHandler {
+	return func(b *Bot, message *tgbotapi.Message) error {
+		courses, err := b.Store.LearningNode().GetCourses()
+		if err != nil {
+			return err
+		}
 
-	msg := tgbotapi.NewMessage(message.Chat.ID, "Доступные курсы")
-	msg.ReplyMarkup = keyboard
-	_, err = Bot.Send(msg)
-	return err
+		keyboard, _ := genCoursesKeyboard(courses, []*models.Document{})
+
+		msg := tgbotapi.NewMessage(message.Chat.ID, "Доступные курсы")
+		msg.ReplyMarkup = keyboard
+		_, err = b.TgAPI.Send(msg)
+		return err
+	}
 }

@@ -2,61 +2,71 @@ package coursesbot
 
 import (
 	"fmt"
-	"github.com/IngvarListard/courses-telebot/internal/models"
-	"github.com/IngvarListard/courses-telebot/internal/store"
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api"
 	"strconv"
 	"strings"
 )
 
-const argsSep = ","
+const (
+	argsSep = ","
+	nodeID  = iota
+	page
+	pType
+)
 
-func sendNodeList(c *tgbotapi.CallbackQuery, nodeID string) (err error) {
-	nodeIDint, err := strconv.ParseInt(nodeID, 10, 64)
-	if err != nil {
-		return fmt.Errorf("incorrect node ID in callback: %v", err)
-	}
+func sendNodeList() callbackHandler {
+	return func(b *Bot, c *tgbotapi.CallbackQuery, nodeID string) (err error) {
+		nodeIDint, err := strconv.ParseInt(nodeID, 10, 64)
+		if err != nil {
+			return fmt.Errorf("incorrect node ID in callback: %v", err)
+		}
 
-	var nodes []*models.LearningNode
-	var documents []*models.Document
-	if e := store.DB.Where(models.LearningNode{ParentID: int(nodeIDint)}).Find(&nodes).Error; e != nil {
-		err = fmt.Errorf("error querying learning nodes: %v", err)
-	}
-	if e := store.DB.Where(models.Document{NodeID: int(nodeIDint)}).Find(&documents).Error; e != nil {
-		err = fmt.Errorf("error querying learning nodes: %v", err)
-	}
-	keyboard, _ := genCoursesKeyboard(nodes, documents)
+		nodes, err := b.Store.LearningNode().GetNodesByParentID(int(nodeIDint))
+		if err != nil {
+			err = fmt.Errorf("error querying learning nodes: %v", err)
+		}
 
-	msg := tgbotapi.NewMessage(c.Message.Chat.ID, "Доступные курсы")
-	msg.ReplyMarkup = keyboard
-	_, err = Bot.Send(msg)
-	return
+		documents, err := b.Store.Document().GetDocumentsByParentID(int(nodeIDint))
+		if err != nil {
+			err = fmt.Errorf("error querying documents: %v", err)
+		}
+
+		keyboard, _ := genCoursesKeyboard(nodes, documents)
+
+		msg := tgbotapi.NewMessage(c.Message.Chat.ID, "Доступные курсы")
+		msg.ReplyMarkup = keyboard
+		_, err = b.TgAPI.Send(msg)
+		return
+	}
 }
 
-func sendDocument(c *tgbotapi.CallbackQuery, documentID string) error {
-	document := &models.Document{}
-	documentIDint, err := strconv.ParseInt(documentID, 10, 64)
-	if err != nil {
-		return fmt.Errorf("incorrect node ID in callback: %v", err)
-	}
-	store.DB.First(document, models.Document{ID: int(documentIDint)})
-	d := tgbotapi.NewDocumentShare(c.Message.Chat.ID, document.FileID)
-	_, err = Bot.Send(d)
+func sendDocument() callbackHandler {
+	return func(b *Bot, c *tgbotapi.CallbackQuery, documentID string) error {
+		documentIDint, err := strconv.ParseInt(documentID, 10, 64)
+		if err != nil {
+			return fmt.Errorf("incorrect node ID in callback: %v", err)
+		}
 
-	return err
+		document, err := b.Store.Document().GetDocumentByID(int(documentIDint))
+		if err != nil {
+			return fmt.Errorf("error getting document by id: %v", err)
+		}
+
+		d := tgbotapi.NewDocumentShare(c.Message.Chat.ID, document.FileID)
+		_, err = b.TgAPI.Send(d)
+
+		return err
+	}
 }
 
-func sendPage(c *tgbotapi.CallbackQuery, argsStr string) error {
-	const (
-		nodeID = iota
-		page
-		pType
-	)
-	args := strings.Split(argsStr, argsSep)
-	if args[pType] == "node" {
+func sendPage() callbackHandler {
+	return func(b *Bot, c *tgbotapi.CallbackQuery, argsStr string) error {
+		args := strings.Split(argsStr, argsSep)
+		if args[pType] == "node" {
 
-	} else if args[pType] == "document" {
+		} else if args[pType] == "document" {
 
+		}
+		return nil
 	}
-	return nil
 }
