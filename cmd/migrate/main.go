@@ -2,18 +2,20 @@ package main
 
 import (
 	"github.com/IngvarListard/courses-telebot/internal/store"
+	"github.com/IngvarListard/courses-telebot/internal/store/gormstore"
 	"log"
 )
 
 func main() {
-	_db, err := store.NewDB()
+	db, err := store.NewDB()
 	if err != nil {
 		log.Fatalf("error while connecting to database: %v", err)
 	}
 	defer func() {
-		if err := _db.Close(); err != nil {
+		if err := db.Close(); err != nil {
 			log.Printf("error during closing the DB connection: %v", err)
 		}
 	}()
-	store.MigrateSchema()
+	gormstore := gormstore.New(db)
+	gormstore.MigrateSchema()
 }

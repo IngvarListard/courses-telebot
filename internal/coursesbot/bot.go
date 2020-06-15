@@ -85,11 +85,11 @@ func (b *Bot) Start() (err error) {
 		switch {
 		case update.Message != nil:
 			if err := b.handleCommand(update.Message); err != nil {
-				b.errorHandler(err, update.Message.Chat.ID, "message", update.Message.Text)
+				go b.errorHandler(err, update.Message.Chat.ID, "message", update.Message.Text)
 			}
 		case update.CallbackQuery != nil:
 			if err := b.handleCallback(update.CallbackQuery); err != nil {
-				b.errorHandler(err, update.CallbackQuery.Message.Chat.ID, "callback", update.CallbackQuery.Data)
+				go b.errorHandler(err, update.CallbackQuery.Message.Chat.ID, "callback", update.CallbackQuery.Data)
 			}
 		}
 	}
