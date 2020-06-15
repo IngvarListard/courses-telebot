@@ -33,8 +33,8 @@ func sendNodeList() callbackHandler {
 
 		keyboard, _ := genCoursesKeyboard(nodes, documents)
 
-		msg := tgbotapi.NewMessage(c.Message.Chat.ID, "Доступные курсы")
-		msg.ReplyMarkup = keyboard
+		msg := tgbotapi.NewEditMessageReplyMarkup(c.Message.Chat.ID, c.Message.MessageID, *keyboard)
+
 		_, err = b.TgAPI.Send(msg)
 		return
 	}
