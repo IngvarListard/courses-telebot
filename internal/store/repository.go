@@ -13,11 +13,13 @@ type UserRepository interface {
 type LearningNodeRepository interface {
 	// GetCourses get all learning nodes that don't have a parent node
 	GetCourses() ([]*models.LearningNode, error)
+	GetNodesByParentID(parentID int) ([]*models.LearningNode, error)
 }
 
 type DocumentRepository interface {
 	// GetDocumentByID
 	GetDocumentByID(int) (*models.Document, error)
+	GetDocumentsByParentID(parentID int) ([]*models.Document, error)
 }
 
 type ChatRepository interface {

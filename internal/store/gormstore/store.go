@@ -2,6 +2,7 @@ package gormstore
 
 import (
 	"github.com/IngvarListard/courses-telebot/internal/models"
+	"github.com/IngvarListard/courses-telebot/internal/store"
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api"
 	"github.com/jinzhu/gorm"
 	"log"
@@ -24,8 +25,8 @@ func (s *Store) MigrateSchema() {
 	s.db.AutoMigrate(&models.Chat{}, &models.User{}, &models.LearningNode{}, &models.Document{})
 }
 
-func (s *Store) User() *UserRepository {
-	if s.userRepository == nil {
+func (s *Store) User() store.UserRepository {
+	if s.userRepository != nil {
 		s.userRepository = &UserRepository{
 			store: s,
 		}
@@ -33,7 +34,7 @@ func (s *Store) User() *UserRepository {
 	return s.userRepository
 }
 
-func (s *Store) Chat() *ChatRepository {
+func (s *Store) Chat() store.ChatRepository {
 	if s.chatRepository == nil {
 		s.chatRepository = &ChatRepository{
 			store: s,
@@ -42,7 +43,7 @@ func (s *Store) Chat() *ChatRepository {
 	return s.chatRepository
 }
 
-func (s *Store) LearningNode() *LearningNodeRepository {
+func (s *Store) LearningNode() store.LearningNodeRepository {
 	if s.learningNodeRepository == nil {
 		s.learningNodeRepository = &LearningNodeRepository{
 			store: s,
@@ -51,7 +52,7 @@ func (s *Store) LearningNode() *LearningNodeRepository {
 	return s.learningNodeRepository
 }
 
-func (s *Store) Document() *DocumentRepository {
+func (s *Store) Document() store.DocumentRepository {
 	if s.documentRepository == nil {
 		s.documentRepository = &DocumentRepository{
 			store: s,

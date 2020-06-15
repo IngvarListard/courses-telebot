@@ -3,7 +3,7 @@ package coursesbot
 import (
 	"context"
 	"fmt"
-	"github.com/IngvarListard/courses-telebot/internal/store/gormstore"
+	"github.com/IngvarListard/courses-telebot/internal/store"
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api"
 	"golang.org/x/net/proxy"
 	"log"
@@ -27,13 +27,13 @@ type (
 
 type Bot struct {
 	TgAPI  *tgbotapi.BotAPI
-	Store  *gormstore.Store
+	Store  store.Store
 	Config *Config
 	callbackHandlers
 	commandHandlers
 }
 
-func New(config *Config, store *gormstore.Store) (*Bot, error) {
+func New(config *Config, store store.Store) (*Bot, error) {
 	var err error
 	dialer, proxyErr := proxy.SOCKS5(
 		"tcp",
