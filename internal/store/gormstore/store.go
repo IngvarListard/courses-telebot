@@ -3,9 +3,7 @@ package gormstore
 import (
 	"github.com/IngvarListard/courses-telebot/internal/models"
 	"github.com/IngvarListard/courses-telebot/internal/store"
-	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api"
 	"github.com/jinzhu/gorm"
-	"log"
 )
 
 type Store struct {
@@ -26,7 +24,7 @@ func (s *Store) MigrateSchema() {
 }
 
 func (s *Store) User() store.UserRepository {
-	if s.userRepository != nil {
+	if s.userRepository == nil {
 		s.userRepository = &UserRepository{
 			store: s,
 		}
@@ -59,16 +57,4 @@ func (s *Store) Document() store.DocumentRepository {
 		}
 	}
 	return s.documentRepository
-}
-
-// AddConversation add user and related chat to db
-func (s *Store) AddConversation(user *tgbotapi.User, chat *tgbotapi.Chat) {
-	newChat, err := s.Chat().GetOrCreate(chat)
-	if err != nil {
-		log.Printf("error creating chat in database: %v", err)
-	}
-	_, err = s.User().GetOrCreate(user, newChat.ID)
-	if err != nil {
-		log.Printf("error creating user in database: %v", err)
-	}
 }
