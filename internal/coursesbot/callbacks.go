@@ -77,7 +77,6 @@ func sendPage() callbackHandler {
 
 func upDirectory() callbackHandler {
 	return func(b *Bot, c *tgbotapi.CallbackQuery, nodeID string) error {
-		fmt.Println("nodeid", nodeID)
 		parentID, err := strconv.Atoi(nodeID)
 		parent, err := b.Store.LearningNode().GetNodeByID(parentID)
 		if err != nil {

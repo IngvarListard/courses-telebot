@@ -113,7 +113,6 @@ func (b *Bot) handleCommand(message *tgbotapi.Message) (err error) {
 }
 
 func (b *Bot) handleCallback(c *tgbotapi.CallbackQuery) (err error) {
-	fmt.Printf("%v\n", c.Data)
 	if _, e := b.TgAPI.AnswerCallbackQuery(tgbotapi.CallbackConfig{CallbackQueryID: c.ID}); e != nil {
 		log.Printf("error during sending callback answer: %v", e)
 	}
