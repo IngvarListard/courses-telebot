@@ -40,7 +40,7 @@ func hello() commandHandler {
 
 func courses() commandHandler {
 	return func(b *Bot, message *tgbotapi.Message) error {
-		courses, err := b.Store.LearningNode().GetCourses()
+		courses, err := b.Store.LearningNode().GetNodesByParentID(0)
 		if err != nil {
 			return err
 		}

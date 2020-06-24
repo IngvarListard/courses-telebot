@@ -2,6 +2,7 @@ package coursesbot
 
 import (
 	"fmt"
+	"github.com/IngvarListard/courses-telebot/internal/models"
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api"
 	"strconv"
 	"strings"
@@ -16,19 +17,22 @@ const (
 
 func sendNodeList() callbackHandler {
 	return func(b *Bot, c *tgbotapi.CallbackQuery, nodeID string) (err error) {
-		nodeIDint, err := strconv.ParseInt(nodeID, 10, 64)
+		nodeIDint, err := strconv.Atoi(nodeID)
 		if err != nil {
 			return fmt.Errorf("incorrect node ID in callback: %v", err)
 		}
 
-		nodes, err := b.Store.LearningNode().GetNodesByParentID(int(nodeIDint))
+		nodes, err := b.Store.LearningNode().GetNodesByParentID(nodeIDint)
 		if err != nil {
 			err = fmt.Errorf("error querying learning nodes: %v", err)
 		}
 
-		documents, err := b.Store.Document().GetDocumentsByParentID(int(nodeIDint))
-		if err != nil {
-			err = fmt.Errorf("error querying documents: %v", err)
+		documents := *new([]*models.Document)
+		if nodeIDint != 0 {
+			documents, err = b.Store.Document().GetDocumentsByParentID(nodeIDint)
+			if err != nil {
+				err = fmt.Errorf("error querying documents: %v", err)
+			}
 		}
 
 		keyboard, _ := genCoursesKeyboard(nodes, documents)
@@ -68,5 +72,19 @@ func sendPage() callbackHandler {
 
 		}
 		return nil
+	}
+}
+
+func upDirectory() callbackHandler {
+	return func(b *Bot, c *tgbotapi.CallbackQuery, nodeID string) error {
+		fmt.Println("nodeid", nodeID)
+		parentID, err := strconv.Atoi(nodeID)
+		parent, err := b.Store.LearningNode().GetNodeByID(parentID)
+		if err != nil {
+			return err
+		}
+
+		ID := strconv.Itoa(parent.ParentID)
+		return sendNodeList()(b, c, ID)
 	}
 }

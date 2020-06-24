@@ -124,7 +124,7 @@ func (b *Bot) handleCallback(c *tgbotapi.CallbackQuery) (err error) {
 		return fmt.Errorf("unknown callback function: %v", data[fnName])
 	}
 	if err := callbackHandler(b, c, data[args]); err != nil {
-		return fmt.Errorf("")
+		return fmt.Errorf("handleCallback: %v", err)
 	}
 	return
 }
@@ -139,6 +139,7 @@ func (b *Bot) registerCallbacks() {
 	b.callbackHandlers["sendNodeList"] = sendNodeList()
 	b.callbackHandlers["sendDocument"] = sendDocument()
 	b.callbackHandlers["sendPage"] = sendPage()
+	b.callbackHandlers["upDir"] = upDirectory()
 }
 
 func NewHTTPProxyClient(config *ProxyConfig) (client *http.Client, err error) {

@@ -8,15 +8,20 @@ type LearningNodeRepository struct {
 	store *Store
 }
 
-// GetCourses returns list of all available courses
-func (lnr *LearningNodeRepository) GetCourses() ([]*models.LearningNode, error) {
+func (lnr *LearningNodeRepository) GetNodesByParentID(parentID int) ([]*models.LearningNode, error) {
 	var nodes []*models.LearningNode
-	err := lnr.store.db.Where("parent_id IS NULL").Find(&nodes).Error
+	var expression interface{}
+	if parentID == 0 {
+		expression = "parent_id IS NULL"
+	} else {
+		expression = models.LearningNode{ParentID: parentID}
+	}
+	err := lnr.store.db.Where(expression).Order("priority").Find(&nodes).Error
 	return nodes, err
 }
 
-func (lnr *LearningNodeRepository) GetNodesByParentID(parentID int) ([]*models.LearningNode, error) {
-	var nodes []*models.LearningNode
-	err := lnr.store.db.Where(models.LearningNode{ParentID: parentID}).Order("priority").Find(&nodes).Error
-	return nodes, err
+func (lnr *LearningNodeRepository) GetNodeByID(nodeID int) (*models.LearningNode, error) {
+	node := new(models.LearningNode)
+	err := lnr.store.db.Where(models.LearningNode{ID: nodeID}).Find(node).Error
+	return node, err
 }
