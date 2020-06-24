@@ -10,7 +10,7 @@ type DocumentRepository struct {
 
 func (dr *DocumentRepository) GetDocumentsByParentID(parentID int) ([]*models.Document, error) {
 	var documents []*models.Document
-	err := dr.store.db.Where(models.Document{NodeID: parentID}).Find(&documents).Error
+	err := dr.store.db.Where(models.Document{NodeID: parentID}).Order("priority").Find(&documents).Error
 	return documents, err
 }
 

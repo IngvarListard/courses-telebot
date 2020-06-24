@@ -9,17 +9,17 @@ type Model struct {
 }
 
 type LearningNode struct {
-	Model
-	ID       int    `json:"id";gorm:"primary_key"`
-	Name     string `json:"name"`
-	DirName  string `json:"dir_name"`
-	Path     string `json:"path"`
-	ParentID int    `json:"parent_id"`
+	ID       int     `json:"id";gorm:"primary_key"`
+	Name     string  `json:"name"`
+	DirName  string  `json:"dir_name"`
+	Path     string  `json:"path"`
+	Priority float32 `json:"priority"`
+	ParentID int     `json:"parent_id"`
 	Parent   *LearningNode
+	Model
 }
 
 type Document struct {
-	Model
 	ID       int           `json:"id";gorm:"primary_key"`
 	Name     string        `json:"name"`
 	FileName string        `json:"file_name"`
@@ -30,4 +30,5 @@ type Document struct {
 	NodeID   int           `json:"node_id"`
 	Node     *LearningNode `json:"node"`
 	URL      string        `json:"url"`
+	Model
 }

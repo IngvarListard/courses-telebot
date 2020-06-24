@@ -17,6 +17,6 @@ func (lnr *LearningNodeRepository) GetCourses() ([]*models.LearningNode, error) 
 
 func (lnr *LearningNodeRepository) GetNodesByParentID(parentID int) ([]*models.LearningNode, error) {
 	var nodes []*models.LearningNode
-	err := lnr.store.db.Where(models.LearningNode{ParentID: parentID}).Find(&nodes).Error
+	err := lnr.store.db.Where(models.LearningNode{ParentID: parentID}).Order("priority").Find(&nodes).Error
 	return nodes, err
 }
