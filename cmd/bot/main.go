@@ -33,5 +33,4 @@ func main() {
 	if err := bot.Start(); err != nil {
 		log.Fatalf("program runtime error: %v", err)
 	}
-
 }

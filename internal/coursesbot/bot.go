@@ -2,6 +2,7 @@ package coursesbot
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"github.com/IngvarListard/courses-telebot/internal/store"
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api"
@@ -33,26 +34,20 @@ type Bot struct {
 	commandHandlers
 }
 
-func New(config *Config, store store.Store) (*Bot, error) {
-	var err error
-	dialer, proxyErr := proxy.SOCKS5(
-		"tcp",
-		os.Getenv("SOCKS5_URL"),
-		&proxy.Auth{User: os.Getenv("SOCKS5_USER"), Password: os.Getenv("SOCKS5_PASSWORD")},
-		proxy.Direct,
-	)
-	if proxyErr != nil {
-		log.Panicf("Error in proxy %s", proxyErr)
-	}
-	client := &http.Client{Transport: &http.Transport{DialContext: func(ctx context.Context, network, addr string) (net.Conn, error) {
-		return dialer.Dial(network, addr)
-	}}}
+func New(config *Config, store store.Store) (bot *Bot, err error) {
+	var botApi *tgbotapi.BotAPI
+	httpClient, err := NewHTTPProxyClient(config.Proxy)
 
-	botApi, err := tgbotapi.NewBotAPIWithClient(config.APIKey, client)
-	if err != nil {
-		return nil, err
+	if config.Proxy != nil {
+		botApi, err = tgbotapi.NewBotAPIWithClient(config.APIKey, httpClient)
+	} else {
+		botApi, err = tgbotapi.NewBotAPI(config.APIKey)
 	}
-	bot := Bot{
+	if err != nil {
+		return
+	}
+
+	bot = &Bot{
 		botApi,
 		store,
 		config,
@@ -65,7 +60,7 @@ func New(config *Config, store store.Store) (*Bot, error) {
 
 	bot.TgAPI.Debug = config.Debug
 	log.Printf("Authorized on account %s", bot.TgAPI.Self.UserName)
-	return &bot, err
+	return bot, err
 }
 
 func (b *Bot) Start() (err error) {
@@ -144,4 +139,35 @@ func (b *Bot) registerCallbacks() {
 	b.callbackHandlers["sendNodeList"] = sendNodeList()
 	b.callbackHandlers["sendDocument"] = sendDocument()
 	b.callbackHandlers["sendPage"] = sendPage()
+}
+
+func NewHTTPProxyClient(config *ProxyConfig) (client *http.Client, err error) {
+
+	if config == nil {
+		err = errors.New("config is nil")
+		return
+	}
+
+	if config.Type == "socks5" {
+		dialer, err := proxy.SOCKS5(
+			"tcp",
+			os.Getenv("SOCKS5_URL"),
+			&proxy.Auth{User: os.Getenv("SOCKS5_USER"), Password: os.Getenv("SOCKS5_PASSWORD")},
+			proxy.Direct,
+		)
+		if err != nil {
+			log.Panicf("Error in proxy %s", err)
+		}
+
+		client = &http.Client{Transport: &http.Transport{DialContext: func(ctx context.Context, network, addr string) (net.Conn, error) {
+			return dialer.Dial(network, addr)
+		}}}
+	} else {
+		msg := fmt.Sprintf("unsupported proxy type: %v\n", config.Type)
+		log.Printf(msg)
+		err = errors.New(msg)
+		return
+	}
+
+	return
 }
