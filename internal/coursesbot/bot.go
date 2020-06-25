@@ -129,16 +129,17 @@ func (b *Bot) handleCallback(c *tgbotapi.CallbackQuery) (err error) {
 }
 
 func (b *Bot) registerCommands() {
-	b.commandHandlers["start"] = start()
-	b.commandHandlers["hello"] = hello()
-	b.commandHandlers["courses"] = courses()
+	b.commandHandlers["start"] = start
+	b.commandHandlers["hello"] = hello
+	b.commandHandlers["courses"] = courses
 }
 
 func (b *Bot) registerCallbacks() {
-	b.callbackHandlers["sendNodeList"] = sendNodeList()
-	b.callbackHandlers["sendDocument"] = sendDocument()
-	b.callbackHandlers["sendPage"] = sendPage()
-	b.callbackHandlers["upDir"] = upDirectory()
+	b.callbackHandlers["sendNodeList"] = sendNodeList
+	b.callbackHandlers["sendDocument"] = sendDocument
+	b.callbackHandlers["sendPage"] = sendPage
+	b.callbackHandlers["upDir"] = upDirectory
+	b.callbackHandlers["sendAllDocs"] = sendAllDocuments
 }
 
 func NewHTTPProxyClient(config *ProxyConfig) (client *http.Client, err error) {
