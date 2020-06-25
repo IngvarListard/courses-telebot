@@ -1,13 +1,17 @@
 package main
 
 import (
+	"context"
 	"github.com/IngvarListard/courses-telebot/internal/coursesbot"
 	"github.com/IngvarListard/courses-telebot/internal/store"
 	"github.com/IngvarListard/courses-telebot/internal/store/gormstore"
 	"log"
+	"os"
+	"os/signal"
 )
 
 func main() {
+
 	config, err := coursesbot.NewConfig()
 	if err != nil {
 		log.Fatalln(err)
@@ -30,7 +34,25 @@ func main() {
 		log.Fatalf("error when setup the bot: %v", err)
 	}
 
-	if err := bot.Start(); err != nil {
+	ctx, cancel := context.WithCancel(context.Background())
+	go handleSignals(cancel)
+
+	if err := bot.Start(ctx); err != nil {
 		log.Fatalf("program runtime error: %v", err)
 	}
+}
+
+func handleSignals(cancel context.CancelFunc) {
+	sigCh := make(chan os.Signal)
+	signal.Notify(sigCh, os.Interrupt)
+
+	for {
+		sig := <-sigCh
+		switch sig {
+		case os.Interrupt:
+			cancel()
+			return
+		}
+	}
+
 }

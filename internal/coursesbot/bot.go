@@ -12,6 +12,7 @@ import (
 	"net/http"
 	"os"
 	"strings"
+	"sync"
 )
 
 const (
@@ -20,8 +21,6 @@ const (
 )
 
 type (
-	callbackHandler  func(b *Bot, c *tgbotapi.CallbackQuery, nodeID string) error
-	commandHandler   func(b *Bot, message *tgbotapi.Message) error
 	callbackHandlers map[string]func(*Bot, *tgbotapi.CallbackQuery, string) error
 	commandHandlers  map[string]func(*Bot, *tgbotapi.Message) error
 )
@@ -63,7 +62,8 @@ func New(config *Config, store store.Store) (bot *Bot, err error) {
 	return bot, err
 }
 
-func (b *Bot) Start() (err error) {
+func (b *Bot) Start(ctx context.Context) (err error) {
+
 	if b.TgAPI == nil {
 		log.Fatalln("improperly configured: no bot instance")
 	}
@@ -76,18 +76,35 @@ func (b *Bot) Start() (err error) {
 		return fmt.Errorf("error while getting updates: %v", err)
 	}
 
-	for update := range updates {
-		switch {
-		case update.Message != nil:
-			if err := b.handleCommand(update.Message); err != nil {
-				go b.errorHandler(err, update.Message.Chat.ID, "message", update.Message.Text)
+	var wg sync.WaitGroup
+	for {
+		select {
+		case update := <-updates:
+			switch {
+			case update.Message != nil:
+				wg.Add(1)
+				go func() {
+					defer wg.Done()
+					if err := b.handleCommand(update.Message); err != nil {
+						b.errorHandler(err, update.Message.Chat.ID, "message", update.Message.Text)
+					}
+				}()
+			case update.CallbackQuery != nil:
+				wg.Add(1)
+				go func() {
+					defer wg.Done()
+					if err := b.handleCallback(update.CallbackQuery); err != nil {
+						b.errorHandler(err, update.CallbackQuery.Message.Chat.ID, "callback", update.CallbackQuery.Data)
+					}
+				}()
 			}
-		case update.CallbackQuery != nil:
-			if err := b.handleCallback(update.CallbackQuery); err != nil {
-				go b.errorHandler(err, update.CallbackQuery.Message.Chat.ID, "callback", update.CallbackQuery.Data)
-			}
+		case <-ctx.Done():
+			wg.Wait()
+			log.Println("bot stopped")
+			return
 		}
 	}
+
 	return err
 }
 
