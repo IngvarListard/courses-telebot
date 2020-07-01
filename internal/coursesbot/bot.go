@@ -18,6 +18,7 @@ import (
 const (
 	fnName int = iota
 	args
+	PageLimit = 10
 )
 
 type (
@@ -154,9 +155,9 @@ func (b *Bot) registerCommands() {
 func (b *Bot) registerCallbacks() {
 	b.callbackHandlers["sendNodeList"] = sendNodeList
 	b.callbackHandlers["sendDocument"] = sendDocument
-	b.callbackHandlers["sendPage"] = sendPage
 	b.callbackHandlers["upDir"] = upDirectory
 	b.callbackHandlers["sendAllDocs"] = sendAllDocuments
+	b.callbackHandlers["nextPage"] = nextPage
 }
 
 func NewHTTPProxyClient(config *ProxyConfig) (client *http.Client, err error) {

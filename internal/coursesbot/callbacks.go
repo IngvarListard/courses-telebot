@@ -10,9 +10,6 @@ import (
 
 const (
 	argsSep = ","
-	nodeID  = iota
-	page
-	pType
 )
 
 func sendNodeList(b *Bot, c *tgbotapi.CallbackQuery, nodeID string) (err error) {
@@ -59,16 +56,6 @@ func sendDocument(b *Bot, c *tgbotapi.CallbackQuery, documentID string) error {
 	return err
 }
 
-func sendPage(b *Bot, c *tgbotapi.CallbackQuery, argsStr string) error {
-	args := strings.Split(argsStr, argsSep)
-	if args[pType] == "node" {
-
-	} else if args[pType] == "document" {
-
-	}
-	return nil
-}
-
 func upDirectory(b *Bot, c *tgbotapi.CallbackQuery, nodeID string) error {
 	parentID, err := strconv.Atoi(nodeID)
 	parent, err := b.Store.LearningNode().GetNodeByID(parentID)
@@ -95,4 +82,127 @@ func sendAllDocuments(b *Bot, c *tgbotapi.CallbackQuery, nodeID string) error {
 		_, err = b.TgAPI.Send(d)
 	}
 	return err
+}
+
+type PageArgs struct{ ParentID, PerPage, LastNodeID, LastDocumentID int }
+
+type PagedCourse struct {
+	perPage   int
+	nodes     []*models.LearningNode
+	documents []*models.Document
+	items     []*PageItem
+}
+
+func NewPagedCourse(perPage int, nodes []*models.LearningNode, documents []*models.Document) *PagedCourse {
+
+	course := &PagedCourse{
+		perPage:   perPage,
+		nodes:     nodes,
+		documents: documents,
+	}
+
+	for _, v := range nodes {
+		course.items = append(course.items, &PageItem{
+			ID:       v.ID,
+			ParentID: v.ParentID,
+			Name:     v.Name,
+			Type:     "node",
+			GetInlineButton: func() (*tgbotapi.InlineKeyboardButton, error) {
+				callback := fmt.Sprintf("sendNodeList:%v", v.ID)
+				newButton := tgbotapi.NewInlineKeyboardButtonData(icons["dir"]+v.Name, callback)
+				return &newButton, nil
+			},
+		})
+	}
+
+	for _, v := range documents {
+		course.items = append(course.items, &PageItem{
+			ID:       v.ID,
+			ParentID: v.NodeID,
+			Name:     v.Name,
+			Type:     "document",
+			GetInlineButton: func() (*tgbotapi.InlineKeyboardButton, error) {
+				icon := icons["doc"]
+				if strings.HasSuffix(v.Name, ".mp3") {
+					icon = icons["audio"]
+				}
+				callback := fmt.Sprintf("sendDocument:%v", v.ID)
+				newButton := tgbotapi.NewInlineKeyboardButtonData(icon+v.Name, callback)
+
+				return &newButton, nil
+			},
+		})
+	}
+
+	return course
+}
+
+func (pc *PagedCourse) GetPage(n int) *Page {
+	last := n * pc.perPage
+	first := last - pc.perPage
+	items := pc.items[first:last]
+	page := &Page{
+		pageNumber:  1,
+		PagedCourse: pc,
+		Items:       items,
+	}
+	return page
+}
+
+type PageItem struct {
+	ID              int
+	ParentID        int
+	Name            string
+	Type            string
+	GetInlineButton func() (*tgbotapi.InlineKeyboardButton, error)
+}
+
+type Page struct {
+	pageNumber int
+	Items      []*PageItem
+	*PagedCourse
+}
+
+func (pc *Page) HasNext() bool { return false }
+
+func nextPage(b *Bot, c *tgbotapi.CallbackQuery, argsStr string) (err error) {
+	var nodes []*models.LearningNode
+	var documents []*models.Document
+
+	var iArgs [4]int
+
+	sArgs := strings.Split(argsStr, argsSep)
+
+	for i, sArg := range sArgs {
+		iArg, err := strconv.Atoi(sArg)
+		if err != nil {
+			return fmt.Errorf("nextPage: error parsing arg %v: %v", sArg, err)
+		}
+		iArgs[i] = iArg
+	}
+
+	nodes, err = b.Store.LearningNode().GetNodesByParentID(iArgs[0])
+
+	if len(nodes) != PageLimit {
+		docsLimit := PageLimit - len(nodes)
+
+		documents, err = b.Store.Document().GetDocumentsByParentID(iArgs[0])
+		if len(documents) > docsLimit {
+			documents = documents[:docsLimit]
+		}
+	}
+
+	course := NewPagedCourse(iArgs[2], nodes, documents)
+
+	page := course.GetPage(iArgs[0])
+
+	keyboard, _ := genCoursesKeyboard2(page.Items)
+	msg := tgbotapi.NewEditMessageReplyMarkup(c.Message.Chat.ID, c.Message.MessageID, *keyboard)
+	_, err = b.TgAPI.Send(msg)
+	if err != nil {
+		return fmt.Errorf("nextPage: error sending response: %v", err)
+	}
+
+	return nil
+
 }
